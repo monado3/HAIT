@@ -89,3 +89,102 @@ trainer.extend(extensions.PrintReport(['epoch','main/loss','main/accuracy','vali
 trainer.extend(extensions.PlotReport(['main/accuracy','validation/main/accuracy'], 'epoch', file_name='accuracy.png'))
 trainer.extend(extensions.PlotReport(['main/loss','validation/main/loss'], 'epoch', file_name='loss.png'))
 trainer.run()
+
+# In[]
+from pylab import box
+def show_graph(src):
+  img = plt.imread(src)
+  xpixels,ypixels = img.shape[0],img.shape[1]
+  dpi = 100
+  margin = 0.01
+  figsize = (1+margin)*ypixels / dpi, (1+margin)*xpixels / dpi
+
+  fig = plt.figure(figsize=figsize, dpi=dpi)
+` ax = fig.add_axes([margin,margin,1-2*margin,1-2*margin])
+  ax.tick_params(labelbottom='off',bottom='off')
+  ax.tick_params(labelleft='off',left='off')
+
+  ax.imshow(img, interpolation='none')
+  box('off')
+  plt.show()
+
+show_graph('result/loss.png')
+show_graph('result/accuracy.png')
+
+# In[]
+# モデルを利用して予測をする関数を定義
+def predict(model, X):
+    # データ数が1の場合は、バッチサイズ分の次元を追加
+    if len(X.shape) == 1:
+        pred = model.predictor(X[None, ...]).data.argmax()
+    # データ数が2以上の場合はそのまま
+    else:
+        pred = model.predictor(X).data.argmax(axis=1)
+    return pred
+index = 123
+draw_digit(X_test[index])
+pred = predict(model, X_test[index])
+ans = y_test[index]
+
+print('predict: ', pred)
+print('answer :', ans)
+if pred==ans:
+  print('correct')
+else:
+  print('incorrect')
+
+# In[]
+from sklearn.metrics import confusion_matrix as cm
+result = predict(model, X_test)
+cm(result, y_test)
+# 混同行列をグラフで出力する関数
+def plot_cm(y_true, y_pred):
+    confmat = cm(y_true, y_pred)
+    fig, ax = plt.subplots(figsize=(10, 10))
+    ax.matshow(confmat, cmap=plt.cm.Blues, alpha=0.3)
+    for i in range(confmat.shape[0]):
+        for j in range(confmat.shape[1]):
+            ax.text(x=j, y=i, s=confmat[i, j], va='center', ha='center')
+    plt.xticks(xp.arange(0, 10, 1)) # x軸の目盛りを指定
+    plt.yticks(xp.arange(0, 10, 1)) # y軸の目盛りを指定
+    plt.xlabel('predicted label')
+    plt.ylabel('true label')
+    plt.show()
+
+plot_cm(result, y_test)
+
+# 性能指標を確認
+from sklearn import metrics
+print('accuracy: %.3f' % metrics.accuracy_score(y_test, predict(model, X_test)))
+print('recall: %.3f' % metrics.recall_score(y_test, predict(model, X_test), average='macro'))
+print('precision: %.3f' % metrics.precision_score(y_test, predict(model, X_test), average='macro'))
+print('f1_score: %.3f' % metrics.f1_score(y_test, predict(model, X_test), average='macro'))
+
+# In[]
+# 予想が外れたデータを表示
+# 今回は3つだけ表示
+count = 0
+for i in range(len(y_test)):
+    pre = predict(model, X_test[i]) # 予測結果
+    ans =  y_test[i]                # 正解
+
+    # 正解が4か9のサンプルについてだけ確認
+    if (ans != 9) and (ans != 4):
+        continue
+
+    # 予測が間違っていたらリストへ格納
+    if pre != ans:
+        count += 1
+        # 予測を間違えた画像を3枚だけ表示
+        if count > 3:
+            break
+        draw_digit(X_test[i])
+        print("正解：{}  予測：{}".format(ans, pre))
+
+# In[]
+serializers.save_npz('mnist.model', model)
+print('Saved the model.')
+
+
+serializers.load_npz('mnist.model', model_reloaded)
+print('Loaded the model.')
