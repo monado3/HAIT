@@ -67,7 +67,19 @@ class MLP(chainer.Chain):
 
 # In[]
 model = L.Classifier(MLP())
-gpu = -1
+gpu = 0
+if gpu >= 0:
+  import cuda
+  xp = cuda.cupy
+  cupy.cuda.Device(gpu).use()
+  model.to_gpu()
+else:
+  xp = np
+# 数値をChainerが扱える型に変換
+X = X.astype(xp.float32)
+y = y.astype(xp.int32)
+# データをxpの32bit小数の型に変換
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
 optimizer = chainer.optimizers.SGD()
 optimizer.setup(model)
 batch_size = 100

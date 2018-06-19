@@ -9,6 +9,10 @@ from sklearn.tree import DecisionTreeClassifier
 iris = load_iris()
 X_1 = iris.data[:, [2, 3]]
 y_1 = iris.target
+
+X_1
+y_1
+
 X_1_train, X_1_test, y_1_train, y_1_test = train_test_split(
     X_1, y_1, test_size=0.3, random_state=0)
 tree_1 = DecisionTreeClassifier(random_state=0)
